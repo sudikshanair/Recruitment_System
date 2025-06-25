@@ -1,0 +1,2 @@
+# Recruitment_System
+A comprehensive recruitment web platform with separate logins for recruiters and interviewers. Recruiters can manage candidate and interviewer data, assign interviewers, search profiles by keywords, and automate interview scheduling with Microsoft Teams links and emails. Interviewers evaluate candidates across two rounds and make final selection decisions, with all data securely stored in a centralized database.
