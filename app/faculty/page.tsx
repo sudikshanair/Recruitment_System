@@ -69,6 +69,21 @@ export default function FacultyPage() {
       member.expertise_areas.some((area) => area.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
+  // Delete faculty handler
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this faculty member?")) return;
+    try {
+      const res = await fetch(`/api/faculty/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setFaculty((prev) => prev.filter((f) => f.id !== id));
+      } else {
+        alert("Failed to delete faculty member.");
+      }
+    } catch (err) {
+      alert("Error deleting faculty member.");
+    }
+  }
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -284,6 +299,14 @@ export default function FacultyPage() {
                       Assign Interview
                     </Button>
                   </Link>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => handleDelete(member.id)}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </CardContent>
             </Card>

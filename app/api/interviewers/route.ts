@@ -20,15 +20,25 @@ export async function GET() {
 
     if (error) throw error
 
-    const formattedData = data.map((interviewer) => ({
-      id: interviewer.id,
-      full_name: interviewer.users.full_name,
-      email: interviewer.users.email,
-      phone: interviewer.users.phone,
-      department: interviewer.department,
-      expertise_areas: interviewer.expertise_areas || [],
-      is_available: interviewer.is_available,
-    }))
+
+    const formattedData = data.map((interviewer) => {
+      // Normalize expertise_areas to always be an array of lowercase strings
+      let expertise_areas: string[] = [];
+      if (typeof interviewer.expertise_areas === 'string') {
+        expertise_areas = interviewer.expertise_areas.split(',').map((s: string) => s.trim().toLowerCase());
+      } else if (Array.isArray(interviewer.expertise_areas)) {
+        expertise_areas = interviewer.expertise_areas.map((s: string) => s.toLowerCase());
+      }
+      return {
+        id: interviewer.id,
+        full_name: interviewer.users.full_name,
+        email: interviewer.users.email,
+        phone: interviewer.users.phone,
+        department: interviewer.department,
+        expertise_areas,
+        is_available: interviewer.is_available,
+      };
+    });
 
     return NextResponse.json(formattedData)
   } catch (error) {

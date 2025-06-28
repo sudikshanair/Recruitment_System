@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +22,7 @@ interface Candidate {
 }
 
 export default function CandidatesPage() {
+  const router = useRouter();
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
@@ -47,6 +49,21 @@ export default function CandidatesPage() {
       candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       candidate.skills.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase())),
   )
+
+  // Delete candidate handler
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this candidate?")) return;
+    try {
+      const res = await fetch(`/api/candidates/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setCandidates((prev) => prev.filter((c) => c.id !== id));
+      } else {
+        alert("Failed to delete candidate.");
+      }
+    } catch (err) {
+      alert("Error deleting candidate.");
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -77,6 +94,15 @@ export default function CandidatesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
+        {/* Home and Back Buttons */}
+        <div className="flex gap-4 mb-6">
+          <Button variant="outline" onClick={() => router.back()}>
+            Back
+          </Button>
+          <Link href="/dashboard/recruiter">
+            <Button variant="outline">Home</Button>
+          </Link>
+        </div>
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Candidates</h1>
@@ -166,6 +192,14 @@ export default function CandidatesPage() {
                         Schedule Interview
                       </Button>
                     </Link>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => handleDelete(candidate.id)}
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </div>
               </CardContent>

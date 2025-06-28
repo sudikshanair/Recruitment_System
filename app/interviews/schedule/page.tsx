@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Calendar, Users } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 interface Candidate {
   id: string
@@ -22,6 +23,7 @@ interface Interviewer {
   full_name: string
   email: string
   is_available: boolean
+  expertise_areas: string[]
 }
 
 interface JobProfile {
@@ -32,10 +34,12 @@ interface JobProfile {
 export default function ScheduleInterviewPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [interviewers, setInterviewers] = useState<Interviewer[]>([])
   const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([])
+  const [searchSkill, setSearchSkill] = useState("")
 
   const [formData, setFormData] = useState({
     candidate_id: searchParams.get("candidate") || "",
@@ -62,9 +66,27 @@ export default function ScheduleInterviewPage() {
         jobsRes.json(),
       ])
 
-      setCandidates(candidatesData)
-      setInterviewers(interviewersData.filter((i: Interviewer) => i.is_available))
-      setJobProfiles(jobsData)
+      setCandidates(Array.isArray(candidatesData) ? candidatesData : [])
+      console.log('INTERVIEWERS RAW DATA:', interviewersData);
+      setInterviewers(
+        Array.isArray(interviewersData)
+          ? interviewersData
+              .map((i: any) => {
+                // Log each interviewer for debugging
+                console.log('INTERVIEWER:', i);
+                return {
+                  ...i,
+                  expertise_areas: typeof i.expertise_areas === "string"
+                    ? i.expertise_areas.split(',').map((s: string) => s.trim().toLowerCase())
+                    : Array.isArray(i.expertise_areas)
+                      ? i.expertise_areas.map((s: string) => s.toLowerCase())
+                      : [],
+                };
+              })
+              .filter((i: Interviewer) => i.is_available)
+          : []
+      )
+      setJobProfiles(Array.isArray(jobsData) ? jobsData : [])
     } catch (error) {
       console.error("Error fetching data:", error)
     }
@@ -74,13 +96,34 @@ export default function ScheduleInterviewPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Filter candidates and interviewers by skill
+  const filteredCandidates = searchSkill
+    ? candidates.filter((c: any) =>
+        Array.isArray(c.skills) && c.skills.some((skill: string) => skill.toLowerCase().includes(searchSkill.toLowerCase()))
+      )
+    : candidates
+
+  const filteredInterviewers = searchSkill
+    ? interviewers.filter((i: any) =>
+        Array.isArray(i.expertise_areas) && i.expertise_areas.some((area: string) => area.toLowerCase().includes(searchSkill.toLowerCase()))
+      )
+    : interviewers
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
+    e.preventDefault();
+    if (!formData.candidate_id || !formData.interviewer_id) {
+      toast({
+        title: "Missing selection",
+        description: "Please select both a candidate and an interviewer.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setLoading(true);
     try {
-      const scheduledDateTime = new Date(`${formData.scheduled_date}T${formData.scheduled_time}`)
+      const scheduledDateTime = new Date(`${formData.scheduled_date}T${formData.scheduled_time}`);
 
+      // 1. Schedule the interview
       const response = await fetch("/api/interviews", {
         method: "POST",
         headers: {
@@ -90,19 +133,51 @@ export default function ScheduleInterviewPage() {
           ...formData,
           scheduled_date: scheduledDateTime.toISOString(),
         }),
-      })
+      });
 
-      if (response.ok) {
-        router.push("/interviews")
-      } else {
-        console.error("Failed to schedule interview")
+      if (!response.ok) {
+        toast({
+          title: "Failed to schedule interview",
+          description: "There was a problem scheduling the interview. Please try again.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
       }
+
+      // 2. Freeze candidate (mark as assigned/unavailable)
+      await fetch(`/api/candidates/${formData.candidate_id}/freeze`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_available: false }),
+      });
+
+      // 3. Freeze interviewer (mark as unavailable)
+      await fetch(`/api/interviewers/${formData.interviewer_id}/freeze`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_available: false }),
+      });
+
+      toast({
+        title: "Interview scheduled!",
+        description: "Both candidate and interviewer will be notified.",
+        variant: "default",
+      });
+      setTimeout(() => {
+        router.push("/interviews");
+      }, 1200);
     } catch (error) {
-      console.error("Error scheduling interview:", error)
+      console.error("Error scheduling interview:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,6 +186,57 @@ export default function ScheduleInterviewPage() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Schedule Interview</h1>
             <p className="text-gray-600">Assign a candidate to an interviewer and set the meeting time</p>
+          </div>
+
+          {/* Skill Search */}
+          <div className="mb-6">
+            <Input
+              placeholder="Search by skill (candidates & faculty)..."
+              value={searchSkill}
+              onChange={(e) => setSearchSkill(e.target.value)}
+              className="h-12 text-lg border-blue-200 focus:border-blue-400"
+            />
+            {/* Show filtered candidates and faculty for preview */}
+            {searchSkill && (
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="bg-white/80">
+                  <CardHeader>
+                    <CardTitle className="text-blue-700 text-base">Candidates with skill</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {filteredCandidates.length === 0 ? (
+                      <div className="text-gray-500 text-sm">No candidates found.</div>
+                    ) : (
+                      <ul className="space-y-1">
+                        {filteredCandidates.map((c) => (
+                          <li key={c.id} className="text-gray-800 text-sm">
+                            {c.full_name} <span className="text-gray-400">({c.email})</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card className="bg-white/80">
+                  <CardHeader>
+                    <CardTitle className="text-blue-700 text-base">Faculty with skill</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {filteredInterviewers.length === 0 ? (
+                      <div className="text-gray-500 text-sm">No faculty found.</div>
+                    ) : (
+                      <ul className="space-y-1">
+                        {filteredInterviewers.map((i) => (
+                          <li key={i.id} className="text-gray-800 text-sm">
+                            {i.full_name} <span className="text-gray-400">({i.email})</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
 
           <Card>
@@ -129,15 +255,10 @@ export default function ScheduleInterviewPage() {
                     onValueChange={(value) => handleInputChange("candidate_id", value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose a candidate">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span>Select candidate</span>
-                        </div>
-                      </SelectValue>
+                      <SelectValue placeholder="Choose a candidate" />
                     </SelectTrigger>
                     <SelectContent>
-                      {candidates.map((candidate) => (
+                      {filteredCandidates.map((candidate) => (
                         <SelectItem key={candidate.id} value={candidate.id}>
                           <div className="flex flex-col">
                             <span>{candidate.full_name}</span>
@@ -156,15 +277,10 @@ export default function ScheduleInterviewPage() {
                     onValueChange={(value) => handleInputChange("interviewer_id", value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose an interviewer">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span>Select interviewer</span>
-                        </div>
-                      </SelectValue>
+                      <SelectValue placeholder="Choose an interviewer" />
                     </SelectTrigger>
                     <SelectContent>
-                      {interviewers.map((interviewer) => (
+                      {filteredInterviewers.map((interviewer) => (
                         <SelectItem key={interviewer.id} value={interviewer.id}>
                           <div className="flex flex-col">
                             <span>{interviewer.full_name}</span>
