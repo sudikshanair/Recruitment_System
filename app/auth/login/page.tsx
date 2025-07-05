@@ -188,6 +188,14 @@ export default function LoginPage() {
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{" "}
+                <Link href="/auth/signup" className="text-blue-600 underline">
+                  Sign up
+                </Link>
+              </p>
+            </div>
 
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-600 mb-4">

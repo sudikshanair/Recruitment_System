@@ -45,9 +45,9 @@ export default function CandidatesPage() {
 
   const filteredCandidates = candidates.filter(
     (candidate) =>
-      candidate.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.skills.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase())),
+      (candidate.full_name && candidate.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (candidate.email && candidate.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (Array.isArray(candidate.skills) && candidate.skills.some((skill) => skill && skill.toLowerCase().includes(searchTerm.toLowerCase())))
   )
 
   // Delete candidate handler

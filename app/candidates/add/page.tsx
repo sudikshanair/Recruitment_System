@@ -109,7 +109,9 @@ export default function AddCandidatePage() {
       if (response.ok) {
         router.push("/candidates")
       } else {
-        console.error("Failed to add candidate")
+        const result = await response.json();
+        console.error("Failed to add candidate", result.error);
+        alert("Failed to add candidate: " + (result.error || "Unknown error"));
       }
     } catch (error) {
       console.error("Error adding candidate:", error)
