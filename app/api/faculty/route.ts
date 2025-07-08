@@ -154,6 +154,16 @@ export async function POST(request: NextRequest) {
     const userId = userResult[0].id
     console.log("User created with ID:", userId)
 
+    // --- Sanitize array fields for Postgres ---
+    const safeArray = (arr: any) =>
+      Array.isArray(arr) && arr.length > 0 && arr[0] !== ""
+        ? arr.map(String)
+        : [];
+    const expertiseArr = safeArray(expertise_areas);
+    const researchArr = safeArray(research_interests);
+    const slotsArr = safeArray(preferred_time_slots);
+    const interviewTypesArr = safeArray(interview_types);
+
     console.log("Creating faculty record...")
     // Then create the faculty record with exact field mapping
     const facultyResult = await sql`
@@ -180,10 +190,10 @@ export async function POST(request: NextRequest) {
         ${specialization || null},
         ${qualification || null},
         ${Number.parseInt(experience_years) || 0},
-        ${expertise_areas},
-        ${research_interests},
-        ${preferred_time_slots},
-        ${interview_types},
+        ${expertiseArr as any}::text[],
+        ${researchArr as any}::text[],
+        ${slotsArr as any}::text[],
+        ${interviewTypesArr as any}::text[],
         ${Number.parseInt(max_interviews_per_day) || 3},
         true
       )

@@ -54,36 +54,32 @@ export default function ScheduleInterviewPage() {
 
   const fetchData = async () => {
     try {
-      const [candidatesRes, interviewersRes, jobsRes] = await Promise.all([
+      const [candidatesRes, facultyRes, jobsRes] = await Promise.all([
         fetch("/api/candidates"),
-        fetch("/api/interviewers"),
+        fetch("/api/faculty"),
         fetch("/api/jobs"),
       ])
 
-      const [candidatesData, interviewersData, jobsData] = await Promise.all([
+      const [candidatesData, facultyData, jobsData] = await Promise.all([
         candidatesRes.json(),
-        interviewersRes.json(),
+        facultyRes.json(),
         jobsRes.json(),
       ])
 
       setCandidates(Array.isArray(candidatesData) ? candidatesData : [])
-      console.log('INTERVIEWERS RAW DATA:', interviewersData);
       setInterviewers(
-        Array.isArray(interviewersData)
-          ? interviewersData
-              .map((i: any) => {
-                // Log each interviewer for debugging
-                console.log('INTERVIEWER:', i);
-                return {
-                  ...i,
-                  expertise_areas: typeof i.expertise_areas === "string"
-                    ? i.expertise_areas.split(',').map((s: string) => s.trim().toLowerCase())
-                    : Array.isArray(i.expertise_areas)
-                      ? i.expertise_areas.map((s: string) => s.toLowerCase())
-                      : [],
-                };
-              })
-              .filter((i: Interviewer) => i.is_available)
+        Array.isArray(facultyData)
+          ? facultyData
+              .map((f: any) => ({
+                id: f.id,
+                full_name: f.full_name,
+                email: f.email,
+                is_available: f.is_available,
+                expertise_areas: Array.isArray(f.expertise_areas)
+                  ? f.expertise_areas.map((s: string) => s.toLowerCase())
+                  : [],
+              }))
+              .filter((f: any) => f.is_available)
           : []
       )
       setJobProfiles(Array.isArray(jobsData) ? jobsData : [])
