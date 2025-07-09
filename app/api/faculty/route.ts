@@ -253,3 +253,19 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// PATCH: Add meeting link to interview list page
+// In app/interviews/page.tsx, add a column for the meeting link
+//
+// <th className="text-left p-2">Meeting Link</th>
+// ...
+// <td className="p-2">
+//   <a href={i.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+//     Join Meeting
+//   </a>
+// </td>
+// ...existing code...
+// PATCH: Backend already generates and includes Teams link and simulates email sending.
+// To send real emails, integrate a service like SendGrid or Resend in sendInterviewNotifications.
+//
+// No further changes needed in faculty route.ts for scheduling/interview logic, as all logic is now unified on the faculty table.

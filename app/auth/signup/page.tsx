@@ -20,17 +20,18 @@ export default function SignupPage() {
     setSuccess("");
     
     if (role === "faculty") {
-    const { data: facultyExists } = await supabase
-      .from("faculty")
-      .select("id")
-      .eq("email", email)
-      .single();
+      // Check if the email is already registered in the users table
+      const { data: userExists } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", email)
+        .single();
 
-    if (!facultyExists) {
-      setError("This email is not registered by a recruiter.");
-      return;
+      if (userExists) {
+        setError("This faculty email is already registered. Please sign in.");
+        return;
+      }
     }
-  }
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       setError(error.message);

@@ -9,6 +9,7 @@ interface Interview {
   interviewer: { full_name: string, email: string }
   scheduled_date: string
   status: string // e.g. "scheduled", "completed", etc.
+  meeting_link?: string
 }
 
 export default function InterviewsPage() {
@@ -49,6 +50,7 @@ export default function InterviewsPage() {
                       <th className="text-left p-2">Interviewer</th>
                       <th className="text-left p-2">Date & Time</th>
                       <th className="text-left p-2">Status</th>
+                      <th className="text-left p-2">Meeting Link</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -58,6 +60,15 @@ export default function InterviewsPage() {
                         <td className="p-2">{i.interviewer.full_name} <span className="text-gray-400">({i.interviewer.email})</span></td>
                         <td className="p-2">{new Date(i.scheduled_date).toLocaleString()}</td>
                         <td className="p-2">{i.status}</td>
+                        <td className="p-2">
+                          {i.meeting_link ? (
+                            <a href={i.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                              Join Meeting
+                            </a>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -80,6 +91,7 @@ export default function InterviewsPage() {
                       <th className="text-left p-2">Interviewer</th>
                       <th className="text-left p-2">Date & Time</th>
                       <th className="text-left p-2">Status</th>
+                      <th className="text-left p-2">Meeting Link</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -89,6 +101,15 @@ export default function InterviewsPage() {
                         <td className="p-2">{i.interviewer.full_name} <span className="text-gray-400">({i.interviewer.email})</span></td>
                         <td className="p-2">{new Date(i.scheduled_date).toLocaleString()}</td>
                         <td className="p-2">{i.status}</td>
+                        <td className="p-2">
+                          {i.meeting_link ? (
+                            <a href={i.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                              Join Meeting
+                            </a>
+                          ) : (
+                            <span className="text-gray-400">N/A</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

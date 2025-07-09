@@ -118,19 +118,14 @@ export default function ScheduleInterviewPage() {
     setLoading(true);
     try {
       const scheduledDateTime = new Date(`${formData.scheduled_date}T${formData.scheduled_time}`);
-
-      // 1. Schedule the interview
       const response = await fetch("/api/interviews", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           scheduled_date: scheduledDateTime.toISOString(),
         }),
       });
-
       if (!response.ok) {
         toast({
           title: "Failed to schedule interview",
@@ -140,34 +135,12 @@ export default function ScheduleInterviewPage() {
         setLoading(false);
         return;
       }
-
-      // 2. Freeze candidate (mark as assigned/unavailable)
-      await fetch(`/api/candidates/${formData.candidate_id}/freeze`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_available: false }),
-      });
-
-      // 3. Freeze interviewer (mark as unavailable)
-      await fetch(`/api/interviewers/${formData.interviewer_id}/freeze`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_available: false }),
-      });
-
-      toast({
-        title: "Interview scheduled!",
-        description: "Both candidate and interviewer will be notified.",
-        variant: "default",
-      });
-      setTimeout(() => {
-        router.push("/interviews");
-      }, 1200);
+      // On success, redirect to interviews page
+      router.push("/interviews");
     } catch (error) {
-      console.error("Error scheduling interview:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: "An error occurred while scheduling the interview.",
         variant: "destructive",
       });
     } finally {
